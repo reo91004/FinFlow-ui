@@ -105,7 +105,7 @@ export interface XAIRequest {
 	investmentAmount: number;
 	riskTolerance: string;
 	investmentHorizon: number;
-	method: "fast" | "accurate";
+	method?: "accurate";
 }
 
 
@@ -195,7 +195,7 @@ export interface CacheItem<T = any> {
 // 유틸리티 타입들
 export type InvestmentProfile = "conservative" | "moderate" | "aggressive";
 export type TimeHorizon = "short" | "medium" | "long";
-export type AnalysisMode = "fast" | "accurate";
+export type AnalysisType = "backtesting" | "live";
 
 // Backend API 요청/응답 계약 타입들 (422 방지용)
 export interface PredictRequest {
@@ -247,7 +247,7 @@ export interface ExplainRequest {
 	investment_amount: number;
 	risk_tolerance: "conservative" | "moderate" | "aggressive";
 	investment_horizon: number;
-	method: AnalysisMode;
+	method?: "accurate";
 }
 
 export interface ExplainResponse {

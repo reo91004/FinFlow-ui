@@ -21,6 +21,7 @@ function AnalysisContent() {
 		const amount = searchParams.get("amount") || "1000000";
 		const period = searchParams.get("period") || "1year";
 		const risk = searchParams.get("risk") || "moderate";
+		const analysisType = searchParams.get("analysisType") || "backtesting";
 		
 		// 기간을 월 단위로 변환
 		let horizon = "12";
@@ -42,6 +43,7 @@ function AnalysisContent() {
 		params.set("amount", amount);
 		params.set("horizon", horizon);
 		params.set("risk", riskLevel);
+		params.set("analysisType", analysisType);
 		
 		// loading 페이지로 리다이렉트
 		router.replace(`/analysis/loading?${params.toString()}`);

@@ -670,7 +670,7 @@ class IRTBackendService:
         allocation = analysis["allocation"]
         avg_crisis = analysis.get("avg_crisis_level")
 
-        mode_label = "정밀" if analysis["analysis_mode"] == "accurate" else "빠른"
+        mode_label = "백테스팅" if analysis["analysis_mode"] == "accurate" else "경량"
         risk_labels = {
             "conservative": "보수형",
             "moderate": "중립형",
@@ -680,7 +680,7 @@ class IRTBackendService:
 
         lines = []
         lines.append(
-            f"분석 모드: {mode_label}, 투자 성향: {risk_label}, 목표 투자 기간: {params['investment_horizon']}개월."
+            f"분석 유형: {mode_label}, 투자 성향: {risk_label}, 목표 투자 기간: {params['investment_horizon']}개월."
         )
         lines.append(
             f"누적 수익률 {metrics['total_return']:.2f}%, 연환산 {metrics['annual_return']:.2f}% "

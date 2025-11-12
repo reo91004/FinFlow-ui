@@ -2,13 +2,12 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Brain, Activity, BarChart3, TrendingUp, Shield, CheckCircle, AlertTriangle, Zap, Timer } from "lucide-react";
+import { Brain, Activity, BarChart3, TrendingUp, Shield, CheckCircle, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { apiCallWithRetry } from "@/lib/config";
-import { AnalysisMode } from "@/lib/types";
+import { AnalysisType } from "@/lib/types";
 import { useRequireAuth } from "@/hooks/use-require-auth";
 
 // 분석 단계 정의 (실제 API 호출과 연동)
@@ -16,10 +15,10 @@ const analysisSteps = [
 	{
 		id: 1,
 		title: "투자 정보 검증",
-		description: "투자 금액, 성향, 기간 등의 정보를 검증하고 있습니다",
+		description: "투자 금액과 선택한 분석 옵션을 검증하고 있습니다",
 		icon: CheckCircle,
 		apiCall: null, // 검증만 하므로 API 호출 없음
-		duration: 2000, // 사용자가 XAI 모드를 선택할 시간 확보
+		duration: 2000, // 사용자에게 피드백을 주기 위한 기본 지연
 		progress: 10,
 	},
 	{
@@ -78,12 +77,14 @@ function AnalysisLoadingContent() {
 	const [progress, setProgress] = useState(0);
 	const [isCompleted, setIsCompleted] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("fast");
 
 	// URL 파라미터에서 분석 데이터 가져오기
 	const investmentAmount = searchParams.get("amount") || "1000000";
 	const riskToleranceNum = searchParams.get("risk") || "5";
 	const investmentHorizon = searchParams.get("horizon") || "12";
+	const analysisType = (searchParams.get("analysisType") as AnalysisType) || "backtesting";
+	const analysisTypeLabel = analysisType === "live" ? "라이브 분석" : "백테스팅 분석";
+	const analysisTypeDescription = analysisType === "live" ? "실거래 계좌와 연동하여 초단기 변동성까지 반영합니다" : "히스토리컬 데이터를 기반으로 전략을 안정적으로 검증합니다";
 
 	// Risk tolerance를 백엔드 형식으로 매핑
 	const mapRiskTolerance = (risk: string): string => {
@@ -153,7 +154,7 @@ function AnalysisLoadingContent() {
 					investment_amount: Number(investmentAmount),
 					risk_tolerance: riskTolerance,
 					investment_horizon: Number(investmentHorizon),
-					method: analysisMode,
+					method: "accurate",
 				}),
 			});
 		},
@@ -240,9 +241,7 @@ function AnalysisLoadingContent() {
 			params.set("amount", investmentAmount);
 			params.set("risk", riskToleranceNum);
 			params.set("horizon", investmentHorizon);
-
-			// XAI 모드도 전달
-			params.set("xaiMode", analysisMode);
+			params.set("analysisType", analysisType);
 
 			// 2초 후 결과 페이지로 이동
 			setTimeout(() => {
@@ -256,15 +255,6 @@ function AnalysisLoadingContent() {
 	};
 
 	const currentStepData = analysisSteps[currentStep];
-
-	// XAI 모드 변경 핸들러
-	const handleAnalysisModeChange = (mode: AnalysisMode) => {
-		setAnalysisMode(mode);
-		// 현재 XAI 단계가 아직 시작되지 않았다면 모드 변경 반영
-		if (currentStep < 5) {
-			console.log(`XAI 모드 변경: ${mode} (${mode === "fast" ? "빠른 분석" : "정밀 분석"})`);
-		}
-	};
 
 	const handleRetry = () => {
 		setError(null);
@@ -308,7 +298,7 @@ function AnalysisLoadingContent() {
 					<p className="text-muted-foreground">투자 금액 {Number(investmentAmount).toLocaleString()}원을 분석하고 있습니다</p>
 				</div>
 
-				{/* XAI 모드 선택 (XAI 단계 이전에만 표시) */}
+				{/* 선택한 분석 유형 요약 */}
 				{currentStep < 5 && !error && (
 					<Card className="backdrop-blur-sm bg-gradient-to-r from-purple-50/90 to-blue-50/90 dark:from-purple-950/90 dark:to-blue-950/90 border border-purple-200/50 dark:border-purple-700/50 rounded-3xl shadow-lg">
 						<CardContent className="p-6">
@@ -318,34 +308,26 @@ function AnalysisLoadingContent() {
 										<Brain className="h-6 w-6 text-white" />
 									</div>
 									<div>
-										<h3 className="text-lg font-bold">AI 설명 모드 선택</h3>
-										<p className="text-sm text-muted-foreground">분석이 시작되기 전에 원하시는 분석 방식을 선택해 주세요</p>
+										<h3 className="text-lg font-bold">분석 유형</h3>
+										<p className="text-sm text-muted-foreground">선택한 방식에 맞춰 IRT 모델을 실행합니다</p>
 									</div>
 								</div>
-								<div className="flex items-center justify-between bg-white/50 dark:bg-gray-800/50 rounded-2xl p-4">
-									<div className="flex items-center space-x-2">
-										<span className="text-sm font-medium text-purple-600 dark:text-purple-400">현재 선택:</span>
-										<span className="text-sm font-bold">{analysisMode === "fast" ? "⚡ 빠른 분석" : "🔍 정밀 분석"}</span>
+								<div className="bg-white/60 dark:bg-gray-900/50 rounded-2xl p-4 space-y-3 border border-white/40 dark:border-gray-800/60">
+									<div className="flex items-center justify-between">
+										<div>
+											<p className="text-xs font-semibold text-purple-600 dark:text-purple-300 tracking-widest">SELECTED</p>
+											<p className="text-xl font-bold mt-1">{analysisTypeLabel}</p>
+										</div>
+										<Badge variant={analysisType === "live" ? "outline" : "secondary"} className="rounded-2xl px-3 py-1">
+											{analysisType === "live" ? "준비 중" : "활성"}
+										</Badge>
 									</div>
-									<Select value={analysisMode} onValueChange={handleAnalysisModeChange}>
-										<SelectTrigger className="w-44 rounded-2xl border-purple-200 dark:border-purple-700 bg-white dark:bg-gray-900">
-											<SelectValue />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="fast">
-												<div className="flex items-center space-x-2">
-													<Zap className="h-4 w-4 text-yellow-500" />
-													<span>빠른 분석 (5-10초)</span>
-												</div>
-											</SelectItem>
-											<SelectItem value="accurate">
-												<div className="flex items-center space-x-2">
-													<Timer className="h-4 w-4 text-blue-500" />
-													<span>정밀 분석 (30초-2분)</span>
-												</div>
-											</SelectItem>
-										</SelectContent>
-									</Select>
+									<p className="text-sm text-muted-foreground">{analysisTypeDescription}</p>
+									{analysisType === "live" ? (
+										<p className="text-xs text-amber-600 dark:text-amber-400">라이브 분석은 아직 비활성화되어 있습니다. 백테스팅 분석으로 자동 진행됩니다.</p>
+									) : (
+										<p className="text-xs text-blue-600 dark:text-blue-300">백테스팅 분석 결과는 IRT 모델 입력값에 최적화되어 설명 가능성을 보장합니다.</p>
+									)}
 								</div>
 							</div>
 						</CardContent>
@@ -394,7 +376,7 @@ function AnalysisLoadingContent() {
 								{currentStepData.apiCall && (
 									<div className="mt-3 flex items-center space-x-2">
 										<div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-										<span className="text-xs text-blue-600 font-medium">실시간 데이터 처리 중...</span>
+										<span className="text-xs text-blue-600 font-medium">데이터 처리 중...</span>
 									</div>
 								)}
 							</div>
@@ -420,8 +402,8 @@ function AnalysisLoadingContent() {
 										<span className="ml-2 font-medium">{Number(investmentAmount).toLocaleString()}원</span>
 									</div>
 									<div>
-										<span className="text-muted-foreground">분석 모드:</span>
-										<span className="ml-2 font-medium">{analysisMode === "fast" ? "빠른 분석" : "정밀 분석"}</span>
+										<span className="text-muted-foreground">분석 유형:</span>
+										<span className="ml-2 font-medium">{analysisTypeLabel}</span>
 									</div>
 								</div>
 							</div>

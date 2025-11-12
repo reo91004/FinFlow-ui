@@ -2,13 +2,12 @@
 
 import React, { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { ArrowLeft, Brain, Activity, BarChart3, TrendingUp, Target, Shield, PieChart, CheckCircle, Info, AlertTriangle, Moon, Sun, RefreshCw, Download, Settings, Zap, Timer } from "lucide-react";
+import { ArrowLeft, Brain, Activity, BarChart3, TrendingUp, Target, Shield, PieChart, CheckCircle, Info, AlertTriangle, Moon, Sun, RefreshCw, Download, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import MarketStatusHeader from "@/components/analysis/MarketStatusHeader";
@@ -25,7 +24,7 @@ import {
 	PerformanceHistory,
 	CorrelationData,
 	RiskReturnData,
-	AnalysisMode,
+	AnalysisType,
 	PredictRequest,
 	PredictResponse,
 	CorrelationRequest,
@@ -55,20 +54,6 @@ const formatPercent = (value: number): string => {
 
 const formatDate = (dateString: string): string => {
 	return new Date(dateString).toLocaleDateString("ko-KR");
-};
-
-const getRiskLabel = (risk: string): string => {
-	const riskNum = Number(risk);
-	if (riskNum <= 3) return "안전형";
-	if (riskNum <= 6) return "중간형";
-	return "공격형";
-};
-
-const getHorizonLabel = (horizon: string): string => {
-	const horizonNum = Number(horizon);
-	if (horizonNum <= 12) return "단기 (1년 이하)";
-	if (horizonNum <= 60) return "중기 (5년 이하)";
-	return "장기 (5년 이상)";
 };
 
 const TRADING_DAYS_PER_YEAR = 252;
@@ -516,14 +501,12 @@ const PerformanceTab = ({ history }: { history: PerformanceHistory[] }) => {
 // XAI 탭 컴포넌트
 const XAITab = ({
 	xaiData,
-	analysisMode,
-	onModeChange,
+	analysisType,
 	onRegenerate,
 	isRegenerating,
 }: {
 	xaiData: XAIData;
-	analysisMode: AnalysisMode;
-	onModeChange: (mode: AnalysisMode) => void;
+	analysisType: AnalysisType;
 	onRegenerate: () => void;
 	isRegenerating: boolean;
 }) => {
@@ -535,40 +518,31 @@ const XAITab = ({
 	}));
 
 	const hasFeatureData = featureChartData.length > 0;
+	const analysisTypeLabel = analysisType === "live" ? "라이브 분석" : "백테스팅 분석";
+	const analysisTypeDescription =
+		analysisType === "live"
+			? "시장 데이터를 실시간으로 반영해 해석 가능한 인사이트를 제공합니다 (준비 중)"
+			: "히스토리컬 데이터를 기반으로 안정적인 IRT 설명을 생성합니다";
 
 	return (
 		<div className="space-y-6">
-			{/* XAI 모드 선택 */}
+			{/* 분석 유형 요약 */}
 			<Card className="backdrop-blur-sm bg-white/90 dark:bg-gray-900/90 border border-gray-200/50 dark:border-gray-700/50 rounded-3xl">
 				<CardContent className="p-6">
-					<div className="flex items-center justify-between">
+					<div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
 						<div className="flex items-center space-x-3">
-							<Brain className="h-5 w-5 text-purple-600" />
+							<div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-purple-500 to-blue-500 flex items-center justify-center shadow-lg">
+								<Brain className="h-5 w-5 text-white" />
+							</div>
 							<div>
-								<h3 className="font-semibold">AI 설명 모드</h3>
-								<p className="text-sm text-muted-foreground">분석 방식을 선택하여 설명을 재생성할 수 있습니다</p>
+								<h3 className="font-semibold">선택된 분석 유형</h3>
+								<p className="text-sm text-muted-foreground">{analysisTypeDescription}</p>
 							</div>
 						</div>
 						<div className="flex items-center space-x-3">
-							<Select value={analysisMode} onValueChange={onModeChange}>
-								<SelectTrigger className="w-40 rounded-2xl">
-									<SelectValue />
-								</SelectTrigger>
-								<SelectContent>
-									<SelectItem value="fast">
-										<div className="flex items-center space-x-2">
-											<Zap className="h-4 w-4" />
-											<span>빠른 분석</span>
-										</div>
-									</SelectItem>
-									<SelectItem value="accurate">
-										<div className="flex items-center space-x-2">
-											<Timer className="h-4 w-4" />
-											<span>정밀 분석</span>
-										</div>
-									</SelectItem>
-								</SelectContent>
-							</Select>
+							<Badge variant="secondary" className="rounded-2xl px-4 py-1 text-sm">
+								{analysisType === "live" ? `${analysisTypeLabel} (준비 중)` : analysisTypeLabel}
+							</Badge>
 							<Button onClick={onRegenerate} disabled={isRegenerating} className="rounded-2xl">
 								{isRegenerating ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />}
 								재생성
@@ -638,7 +612,7 @@ const XAITab = ({
 						<Info className="h-5 w-5 text-purple-600" />
 						<span>AI 분석 설명</span>
 						<Badge variant="secondary" className="ml-2 rounded-2xl">
-							{analysisMode === "fast" ? "빠른 모드" : "정밀 모드"}
+							{analysisType === "live" ? "라이브 분석 (준비 중)" : "백테스팅 분석"}
 						</Badge>
 					</CardTitle>
 					<CardDescription>포트폴리오 구성 근거와 투자 전략 해설</CardDescription>
@@ -930,13 +904,14 @@ function AnalysisResultsContent() {
 		correlation: { isLoading: true, progress: 0, error: null },
 		riskReturn: { isLoading: true, progress: 0, error: null },
 	});
-	const [analysisMode, setAnalysisMode] = useState<AnalysisMode>("fast");
 	const [isRegeneratingXAI, setIsRegeneratingXAI] = useState(false);
 
 	// URL 파라미터
 	const investmentAmount = searchParams.get("amount") || "1000000";
 	const riskToleranceNum = searchParams.get("risk") || "5";
 	const investmentHorizon = searchParams.get("horizon") || "12";
+	const analysisType = (searchParams.get("analysisType") as AnalysisType) || "backtesting";
+	const analysisTypeLabel = analysisType === "live" ? "라이브 분석" : "백테스팅 분석";
 
 	// Risk tolerance를 백엔드 형식으로 매핑
 	const mapRiskTolerance = (risk: string): string => {
@@ -1069,7 +1044,7 @@ function AnalysisResultsContent() {
 				investment_amount: Number(investmentAmount),
 				risk_tolerance: riskTolerance as "conservative" | "moderate" | "aggressive",
 				investment_horizon: Number(investmentHorizon),
-				method: analysisMode,
+				method: "accurate",
 			};
 
 			const response = await apiCallWithRetry("/explain", {
@@ -1322,27 +1297,11 @@ function AnalysisResultsContent() {
 		}
 	};
 
-	const handleXAIModeChange = async (mode: AnalysisMode) => {
-		setAnalysisMode(mode);
+	const handleRegenerateXAI = async () => {
 		setIsRegeneratingXAI(true);
 
 		try {
-			const req: ExplainRequest = {
-				investment_amount: Number(investmentAmount),
-				risk_tolerance: riskTolerance as "conservative" | "moderate" | "aggressive",
-				investment_horizon: Number(investmentHorizon),
-				method: mode,
-			};
-
-			const response = await apiCallWithRetry("/explain", {
-				method: "POST",
-				body: JSON.stringify(req),
-			});
-
-			setTabsData((prev) => ({
-				...prev!,
-				xai: response as XAIData,
-			}));
+			await loadXAIData(true);
 		} catch (error) {
 			console.error("XAI 재생성 실패", error);
 		} finally {
@@ -1417,7 +1376,11 @@ function AnalysisResultsContent() {
 								{mounted && theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
 							</Button>
 							<Button
-								onClick={() => router.push(`/analysis/loading?amount=${investmentAmount}&risk=${riskTolerance}&horizon=${investmentHorizon}`)}
+								onClick={() =>
+									router.push(
+										`/analysis/loading?amount=${investmentAmount}&risk=${riskTolerance}&horizon=${investmentHorizon}&analysisType=${analysisType}`,
+									)
+								}
 								className="bg-blue-600 hover:bg-blue-700 text-white rounded-2xl"
 							>
 								<Brain className="w-4 h-4 mr-2" />
@@ -1442,14 +1405,8 @@ function AnalysisResultsContent() {
 						</div>
 						<h2 className="text-3xl font-bold">포트폴리오 분석이 완료되었습니다</h2>
 						<p className="text-muted-foreground text-lg">투자 금액 {formatCurrency(Number(investmentAmount))}에 대한 AI 최적화 포트폴리오를 제안합니다</p>
-						<div className="flex items-center justify-center space-x-4 text-sm text-muted-foreground">
-							<div>
-								투자 성향: <span className="font-medium">{getRiskLabel(riskTolerance)}</span>
-							</div>
-							<div>•</div>
-							<div>
-								투자 기간: <span className="font-medium">{getHorizonLabel(investmentHorizon)}</span>
-							</div>
+						<div className="flex items-center justify-center text-sm text-muted-foreground">
+							분석 유형: <span className="font-medium ml-1">{analysisTypeLabel}</span>
 						</div>
 					</div>
 
@@ -1500,17 +1457,11 @@ function AnalysisResultsContent() {
 
 						<TabsContent value="xai" className="space-y-6 mt-8">
 							{loadingStates.xai.isLoading ? (
-								<LoadingCard title="AI 설명 생성 중..." description={`${analysisMode === "fast" ? "빠른" : "정밀"} 모드로 투자 결정 근거를 분석하고 있습니다`} />
+								<LoadingCard title="AI 설명 생성 중..." description="IRT 기반 백테스팅 데이터를 해석 가능한 언어로 정리하고 있습니다" />
 							) : loadingStates.xai.error ? (
 								<ErrorCard title="AI 설명 생성 실패" error={loadingStates.xai.error} onRetry={() => handleRetry("xai")} />
 							) : (
-								<XAITab
-									xaiData={tabsData.xai}
-									analysisMode={analysisMode}
-									onModeChange={handleXAIModeChange}
-									onRegenerate={() => handleXAIModeChange(analysisMode)}
-									isRegenerating={isRegeneratingXAI}
-								/>
+								<XAITab xaiData={tabsData.xai} analysisType={analysisType} onRegenerate={handleRegenerateXAI} isRegenerating={isRegeneratingXAI} />
 							)}
 						</TabsContent>
 
