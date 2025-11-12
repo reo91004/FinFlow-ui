@@ -421,9 +421,9 @@ const PortfolioTab = ({ allocation, metrics, quickMetrics }: { allocation: Portf
 				<CardDescription>포트폴리오와 벤치마크 비교</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<div className="overflow-x-auto">
+				<div className="overflow-x-auto max-h-[600px] overflow-y-auto">
 					<table className="w-full text-sm">
-						<thead>
+						<thead className="sticky top-0 bg-white dark:bg-gray-900 z-10">
 							<tr className="border-b border-gray-200 dark:border-gray-700">
 								<th className="text-left py-3 font-medium">지표</th>
 								<th className="text-center py-3 font-medium">포트폴리오</th>
@@ -701,7 +701,7 @@ const CorrelationTab = ({ correlationData }: { correlationData: CorrelationData[
 				</CardHeader>
 				<CardContent>
 					{stocks.length > 0 ? (
-						<div className="flex justify-center">
+						<div className="flex justify-center max-h-[800px] overflow-auto">
 							<div className="overflow-x-auto">
 								{/* 커스텀 히트맵 */}
 								<div className="mx-auto inline-block">
@@ -794,9 +794,9 @@ const CorrelationTab = ({ correlationData }: { correlationData: CorrelationData[
 					<CardDescription>포트폴리오 내 자산들의 상관관계 분석 (최근 1년 기준)</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<div className="overflow-x-auto">
+					<div className="overflow-x-auto max-h-[600px] overflow-y-auto">
 						<table className="w-full text-sm">
-							<thead>
+							<thead className="sticky top-0 bg-white dark:bg-gray-900 z-10">
 								<tr>
 									<th className="text-left p-3 font-medium">종목 1</th>
 									<th className="text-left p-3 font-medium">종목 2</th>
@@ -882,7 +882,7 @@ const RiskAnalysisTab = ({ riskReturnData }: { riskReturnData: RiskReturnData[] 
 					<CardTitle>종목별 위험-수익 지표</CardTitle>
 				</CardHeader>
 				<CardContent>
-					<div className="space-y-3">
+					<div className="space-y-3 max-h-[700px] overflow-y-auto pr-2">
 						{riskReturnData
 							.sort((a, b) => b.return_rate - a.return_rate)
 							.map((item, index) => (
